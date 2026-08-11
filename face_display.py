@@ -106,6 +106,13 @@ class SodabotFace:
             if self.state == "curious":
                 self.set_state("idle")
 
+        elif kind == "wake":
+            self.set_state("excited")
+            self.show_caption("네, 불렀어요?", config.GREETING_DURATION_MS)
+            self.root.after(
+                config.GREETING_DURATION_MS, lambda: self._end_greeting("excited")
+            )
+
     def _end_greeting(self, expected_state):
         if self.state == expected_state:
             self.set_state("idle")

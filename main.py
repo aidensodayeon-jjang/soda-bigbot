@@ -14,6 +14,7 @@ import audio
 import config
 import face_db
 import proclock
+import wake_word
 from face_display import SodabotFace
 from vision import FaceDetector, SFaceEmbedder
 
@@ -87,6 +88,15 @@ def main():
     stop_event = threading.Event()
     worker = threading.Thread(target=vision_loop, args=(app, stop_event), daemon=True)
     worker.start()
+
+    # daemon 스레드라 앱 종료 시 arecord가 즉시 안 죽을 수 있음.
+    # ponytail: 마이크가 이후 "장치 사용 중"으로 걸리면 stop_event로 정리하는 방식 추가.
+    wake_thread = threading.Thread(
+        target=wake_word.listen_for_wake_word,
+        args=(lambda: app.push_event(("wake",)),),
+        daemon=True,
+    )
+    wake_thread.start()
 
     try:
         app.run()
