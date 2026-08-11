@@ -38,6 +38,9 @@ GREETING_DURATION_MS = 4000
 MAIN_PID_FILE = os.path.join(BASE_DIR, ".main.pid")
 REGISTER_PID_FILE = os.path.join(BASE_DIR, ".register.pid")
 
+# 스피커 (JieLi BR21 블루투스 스피커, USB 유선 연결)
+SPEAKER_DEVICE = "plughw:CARD=BR21,DEV=0"
+
 # 웨이크워드 (PocketSphinx 키워드 스팟팅으로 "hi soda" 감지)
 MIC_DEVICE = "plughw:2,0"  # Logitech StreamCam 내장 마이크 (arecord -l 기준)
 WAKE_KEYPHRASE = "hi soda"

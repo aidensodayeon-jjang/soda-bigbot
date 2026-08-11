@@ -3,6 +3,8 @@ import os
 import random
 import subprocess
 
+import config
+
 
 def pick_random(directory):
     files = glob.glob(os.path.join(directory, "*.wav"))
@@ -15,7 +17,7 @@ def play(path):
         return
 
     subprocess.Popen(
-        ["aplay", "-q", path],
+        ["aplay", "-q", "-D", config.SPEAKER_DEVICE, path],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
