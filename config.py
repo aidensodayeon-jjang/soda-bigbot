@@ -37,3 +37,7 @@ GREETING_DURATION_MS = 4000
 # main.py / register_face.py 동시 실행 방지용 PID 파일
 MAIN_PID_FILE = os.path.join(BASE_DIR, ".main.pid")
 REGISTER_PID_FILE = os.path.join(BASE_DIR, ".register.pid")
+
+# 웨이크워드 (Vosk 오프라인 음성인식으로 "소다야"/"하이 소다" 감지)
+MIC_DEVICE = "plughw:2,0"  # Logitech StreamCam 내장 마이크 (arecord -l 기준)
+VOSK_MODEL_DIR = os.path.join(MODELS_DIR, "vosk-model-ko")
