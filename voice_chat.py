@@ -74,7 +74,7 @@ async def _run_session(on_state):
                             "turn_detection": {"type": "server_vad"},
                         },
                         "output": {
-                            "format": {"type": "audio/pcm"},
+                            "format": {"type": "audio/pcm", "rate": SAMPLE_RATE},
                             "voice": config.REALTIME_VOICE,
                         },
                     },
