@@ -1,8 +1,15 @@
+import audioop
 import subprocess
+from collections import deque
 
 from pocketsphinx import Decoder
 
 import config
+
+# TV/스피커에서 나오는 배경 소음은 대체로 사용자가 직접 부를 때보다 마이크에
+# 작게 들어온다. 그래서 KWS 임계값은 느슨하게 열어 실제 "hi soda"를 잘 잡되,
+# 감지 순간 음량이 이 값보다 작으면(=먼 곳 소리로 추정) 무시한다.
+MIN_DETECT_RMS = 150
 
 
 def _make_decoder():
@@ -35,6 +42,7 @@ def listen_for_wake_word(on_detected):
     """
     decoder = _make_decoder()
     rec = _open_mic()
+    recent_rms = deque(maxlen=30)  # 약 1초 분량, 발화 순간의 음량을 판단하기 위함
 
     decoder.start_utt()
     try:
@@ -43,12 +51,20 @@ def listen_for_wake_word(on_detected):
             if not buf:
                 break
 
+            recent_rms.append(audioop.rms(buf, 2))
             decoder.process_raw(buf, False, False)
 
             if decoder.hyp() is not None:
+                loud_enough = max(recent_rms) >= MIN_DETECT_RMS
+                decoder.end_utt()
+
+                if not loud_enough:
+                    # 가까이서 부른 게 아니라 TV 등 먼 배경음일 가능성이 커서 무시
+                    decoder.start_utt()
+                    continue
+
                 rec.terminate()
                 rec.wait()
-                decoder.end_utt()
 
                 on_detected()
 
