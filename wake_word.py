@@ -7,6 +7,7 @@ import config
 
 def _make_decoder():
     ps_config = Decoder.default_config()
+    ps_config.set_string("-lm", None)  # 기본 언어모델을 끄고 키워드 스팟팅 모드로 전환
     ps_config.set_string("-keyphrase", config.WAKE_KEYPHRASE)
     ps_config.set_float("-kws_threshold", float(config.WAKE_KWS_THRESHOLD))
     ps_config.set_string("-logfn", "/dev/null")
