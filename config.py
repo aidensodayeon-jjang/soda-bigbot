@@ -43,6 +43,7 @@ REGISTER_CAPTURE_INTERVAL = 0.6
 # 인사
 GREET_COOLDOWN_SEC = 120
 GREETING_DURATION_MS = 4000
+SLEEPY_AFTER_SEC = 120  # 이만큼 아무도 안 보이면 졸린 표정으로 전환
 
 # main.py / register_face.py 동시 실행 방지용 PID 파일
 MAIN_PID_FILE = os.path.join(BASE_DIR, ".main.pid")

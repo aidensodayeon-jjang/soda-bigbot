@@ -41,6 +41,8 @@ def vision_loop(app, stop_event, conversation_active):
 
     last_greeted = {}
     last_reload = time.time()
+    last_face_time = time.time()  # sleepy 판단용: 마지막으로 얼굴이 보였던 시각
+    face_was_present = False
 
     try:
         while not stop_event.is_set():
@@ -53,17 +55,27 @@ def vision_loop(app, stop_event, conversation_active):
                 continue
 
             boxes = detector.detect(frame)
+            now = time.time()
 
             if not boxes or (boxes[0][3] - boxes[0][1]) < config.MIN_FACE_SIZE:
-                app.push_event(("idle",))
+                face_was_present = False
+                if now - last_face_time >= config.SLEEPY_AFTER_SEC:
+                    app.push_event(("sleepy",))
+                else:
+                    app.push_event(("idle",))
                 continue
+
+            last_face_time = now
+
+            if not face_was_present:
+                # 한동안 안 보이다가 방금 나타남
+                face_was_present = True
+                app.push_event(("surprised",))
 
             x1, y1, x2, y2, score = boxes[0]
             face = frame[y1:y2, x1:x2]
             embedding = embedder.embed(face)
             name, similarity = face_db.match_best(embedding, names, matrix)
-
-            now = time.time()
 
             if name is not None and similarity >= config.MATCH_THRESHOLD:
                 if now - last_greeted.get(name, 0) >= config.GREET_COOLDOWN_SEC:
@@ -90,7 +102,7 @@ def _on_wake(app, conversation_active):
     except Exception as e:
         # 대화 세션에서 무슨 일이 나든 웨이크워드 스레드는 계속 살아있어야 한다.
         print("대화 세션 오류:", e)
-        app.push_event(("state", "idle"))
+        app.push_event(("state", "worried"))
     finally:
         conversation_active.clear()
 

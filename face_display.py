@@ -106,6 +106,15 @@ class SodabotFace:
             if self.state == "curious":
                 self.set_state("idle")
 
+        elif kind == "surprised":
+            # 한동안 안 보이다가 갑자기 얼굴이 나타난 순간(=방금 알아챔)
+            self.set_state("surprised")
+            self.root.after(1000, lambda: self._end_greeting("surprised"))
+
+        elif kind == "sleepy":
+            if self.state == "idle":
+                self.set_state("sleepy")
+
         elif kind == "wake":
             self.set_state("excited")
             self.show_caption("네, 불렀어요?", config.GREETING_DURATION_MS)
@@ -114,7 +123,10 @@ class SodabotFace:
             )
 
         elif kind == "state":
-            self.set_state(event[1])
+            value = event[1]
+            self.set_state(value)
+            if value == "worried":
+                self.root.after(2000, lambda: self._end_greeting("worried"))
 
     def _end_greeting(self, expected_state):
         if self.state == expected_state:
