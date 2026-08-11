@@ -3,6 +3,17 @@ import os
 HOME = os.path.expanduser("~")
 BASE_DIR = os.path.join(HOME, "sodabot")
 
+# .env (API 키 등 비밀값)를 환경변수로 로드. 자동 시작 등 로그인 셸을 거치지 않는
+# 실행 경로에서도 os.environ.get()이 동작하도록 여기서 직접 채워 넣는다.
+_env_path = os.path.join(BASE_DIR, ".env")
+if os.path.exists(_env_path):
+    with open(_env_path) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line and not _line.startswith("#") and "=" in _line:
+                _key, _value = _line.split("=", 1)
+                os.environ.setdefault(_key.strip(), _value.strip())
+
 FACES_DIR = os.path.join(BASE_DIR, "faces")
 MODELS_DIR = os.path.join(BASE_DIR, "models")
 GREETING_SOUNDS_DIR = os.path.join(BASE_DIR, "sounds", "greeting")
@@ -40,6 +51,12 @@ REGISTER_PID_FILE = os.path.join(BASE_DIR, ".register.pid")
 
 # 스피커 (JieLi BR21 블루투스 스피커, USB 유선 연결)
 SPEAKER_DEVICE = "plughw:CARD=BR21,DEV=0"
+
+# GPT 실시간 음성 대화 (OpenAI Realtime API)
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+REALTIME_MODEL = "gpt-4o-realtime-preview"
+REALTIME_VOICE = "alloy"
+CONVERSATION_IDLE_TIMEOUT_SEC = 30  # 응답 없이 이 시간 지나면 세션 종료 (요금 방지)
 
 # 웨이크워드 (PocketSphinx 키워드 스팟팅으로 "hi soda" 감지)
 MIC_DEVICE = "plughw:2,0"  # Logitech StreamCam 내장 마이크 (arecord -l 기준)

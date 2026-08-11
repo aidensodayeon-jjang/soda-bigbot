@@ -14,11 +14,8 @@ def _make_decoder():
     return Decoder(ps_config)
 
 
-def listen_for_wake_word(on_detected):
-    """마이크 입력을 스트리밍하며 웨이크워드가 들리면 on_detected()를 호출한다."""
-    decoder = _make_decoder()
-
-    rec = subprocess.Popen(
+def _open_mic():
+    return subprocess.Popen(
         [
             "arecord", "-D", config.MIC_DEVICE,
             "-f", "S16_LE", "-r", "16000", "-c", "1",
@@ -28,6 +25,16 @@ def listen_for_wake_word(on_detected):
         ],
         stdout=subprocess.PIPE,
     )
+
+
+def listen_for_wake_word(on_detected):
+    """마이크 입력을 스트리밍하며 웨이크워드가 들리면 on_detected()를 호출한다.
+
+    on_detected()를 부르는 동안은 마이크를 놓아줘서(arecord 종료), 대화 세션 등
+    같은 마이크 장치를 쓰는 다른 코드가 그 사이에 열 수 있게 한다.
+    """
+    decoder = _make_decoder()
+    rec = _open_mic()
 
     decoder.start_utt()
     try:
@@ -39,9 +46,14 @@ def listen_for_wake_word(on_detected):
             decoder.process_raw(buf, False, False)
 
             if decoder.hyp() is not None:
-                on_detected()
+                rec.terminate()
+                rec.wait()
                 decoder.end_utt()
+
+                on_detected()
+
                 decoder.start_utt()
+                rec = _open_mic()
     finally:
         rec.terminate()
 

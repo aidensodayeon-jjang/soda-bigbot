@@ -14,6 +14,7 @@ import audio
 import config
 import face_db
 import proclock
+import voice_chat
 import wake_word
 from face_display import SodabotFace
 from vision import FaceDetector, SFaceEmbedder
@@ -79,6 +80,11 @@ def vision_loop(app, stop_event):
         embedder.close()
 
 
+def _on_wake(app):
+    app.push_event(("wake",))
+    voice_chat.start_conversation(on_state=lambda s: app.push_event(("state", s)))
+
+
 def main():
     proclock.stop_other(config.REGISTER_PID_FILE, "register_face.py")
     proclock.write_pid(config.MAIN_PID_FILE)
@@ -93,7 +99,7 @@ def main():
     # ponytail: 마이크가 이후 "장치 사용 중"으로 걸리면 stop_event로 정리하는 방식 추가.
     wake_thread = threading.Thread(
         target=wake_word.listen_for_wake_word,
-        args=(lambda: app.push_event(("wake",)),),
+        args=(lambda: _on_wake(app),),
         daemon=True,
     )
     wake_thread.start()

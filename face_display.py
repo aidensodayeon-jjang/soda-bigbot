@@ -113,6 +113,9 @@ class SodabotFace:
                 config.GREETING_DURATION_MS, lambda: self._end_greeting("excited")
             )
 
+        elif kind == "state":
+            self.set_state(event[1])
+
     def _end_greeting(self, expected_state):
         if self.state == expected_state:
             self.set_state("idle")
