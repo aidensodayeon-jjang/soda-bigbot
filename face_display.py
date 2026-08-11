@@ -58,8 +58,10 @@ class SodabotFace:
         self.caption = ""
 
         self.events = queue.Queue()
+        self.on_trigger = lambda: None  # main.py가 채워 넣는 대화 시작 콜백
 
         self.root.bind("<Escape>", lambda e: self.root.destroy())
+        self.root.bind("<space>", lambda e: self.on_trigger())
         for i, name in enumerate(KEY_STATES, start=1):
             self.root.bind(str(i), lambda e, n=name: self.set_state(n))
 

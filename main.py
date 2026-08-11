@@ -14,7 +14,6 @@ import config
 import face_db
 import proclock
 import voice_chat
-import wake_word
 from face_display import SodabotFace
 from vision import FaceDetector, SFaceEmbedder
 
@@ -94,13 +93,15 @@ def vision_loop(app, stop_event, conversation_active):
         embedder.close()
 
 
-def _on_wake(app, conversation_active):
+def _on_trigger(app, conversation_active):
+    if conversation_active.is_set():
+        return  # 이미 대화 중이면 무시
+
     app.push_event(("wake",))
     conversation_active.set()
     try:
         voice_chat.start_conversation(on_state=lambda s: app.push_event(("state", s)))
     except Exception as e:
-        # 대화 세션에서 무슨 일이 나든 웨이크워드 스레드는 계속 살아있어야 한다.
         print("대화 세션 오류:", e)
         app.push_event(("state", "worried"))
     finally:
@@ -120,14 +121,12 @@ def main():
     )
     worker.start()
 
-    # daemon 스레드라 앱 종료 시 arecord가 즉시 안 죽을 수 있음.
-    # ponytail: 마이크가 이후 "장치 사용 중"으로 걸리면 stop_event로 정리하는 방식 추가.
-    wake_thread = threading.Thread(
-        target=wake_word.listen_for_wake_word,
-        args=(lambda: _on_wake(app, conversation_active),),
-        daemon=True,
-    )
-    wake_thread.start()
+    def trigger():
+        threading.Thread(
+            target=_on_trigger, args=(app, conversation_active), daemon=True
+        ).start()
+
+    app.on_trigger = trigger
 
     try:
         app.run()
