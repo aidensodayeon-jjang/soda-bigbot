@@ -71,7 +71,11 @@ async def _run_session(on_state):
                     "audio": {
                         "input": {
                             "format": {"type": "audio/pcm", "rate": SAMPLE_RATE},
-                            "turn_detection": {"type": "server_vad"},
+                            "turn_detection": {
+                                "type": "server_vad",
+                                "threshold": 0.6,  # 기본 0.5보다 높여 배경 소음에 덜 반응
+                                "silence_duration_ms": 700,  # 말 끊김으로 오판하기 전 대기 시간(기본 500ms)
+                            },
                         },
                         "output": {
                             "format": {"type": "audio/pcm", "rate": SAMPLE_RATE},
