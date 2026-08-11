@@ -22,7 +22,7 @@ from vision import FaceDetector, SFaceEmbedder
 DB_RELOAD_SEC = 30  # register_face.py로 새로 등록된 얼굴을 주기적으로 반영
 
 
-def vision_loop(app, stop_event):
+def vision_loop(app, stop_event, conversation_active):
     detector = FaceDetector()
     embedder = SFaceEmbedder()
 
@@ -66,7 +66,9 @@ def vision_loop(app, stop_event):
                 if now - last_greeted.get(name, 0) >= config.GREET_COOLDOWN_SEC:
                     last_greeted[name] = now
                     app.push_event(("greet", name))
-                    audio.play(audio.pick_random(config.GREETING_SOUNDS_DIR))
+                    if not conversation_active.is_set():
+                        # 대화 중엔 같은 스피커 장치를 놓고 aplay끼리 충돌하므로 인사 소리는 생략
+                        audio.play(audio.pick_random(config.GREETING_SOUNDS_DIR))
                     print("인사:", name, round(similarity, 3))
             else:
                 app.push_event(("curious",))
@@ -80,14 +82,17 @@ def vision_loop(app, stop_event):
         embedder.close()
 
 
-def _on_wake(app):
+def _on_wake(app, conversation_active):
     app.push_event(("wake",))
+    conversation_active.set()
     try:
         voice_chat.start_conversation(on_state=lambda s: app.push_event(("state", s)))
     except Exception as e:
         # 대화 세션에서 무슨 일이 나든 웨이크워드 스레드는 계속 살아있어야 한다.
         print("대화 세션 오류:", e)
         app.push_event(("state", "idle"))
+    finally:
+        conversation_active.clear()
 
 
 def main():
@@ -97,14 +102,17 @@ def main():
     app = SodabotFace()
 
     stop_event = threading.Event()
-    worker = threading.Thread(target=vision_loop, args=(app, stop_event), daemon=True)
+    conversation_active = threading.Event()
+    worker = threading.Thread(
+        target=vision_loop, args=(app, stop_event, conversation_active), daemon=True
+    )
     worker.start()
 
     # daemon 스레드라 앱 종료 시 arecord가 즉시 안 죽을 수 있음.
     # ponytail: 마이크가 이후 "장치 사용 중"으로 걸리면 stop_event로 정리하는 방식 추가.
     wake_thread = threading.Thread(
         target=wake_word.listen_for_wake_word,
-        args=(lambda: _on_wake(app),),
+        args=(lambda: _on_wake(app, conversation_active),),
         daemon=True,
     )
     wake_thread.start()
