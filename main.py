@@ -49,6 +49,10 @@ def vision_loop(app, stop_event, conversation_active):
             if not ret:
                 continue
 
+            if conversation_active.is_set():
+                # 대화 중엔 얼굴 인식(CPU 무거움)을 쉬어서 오디오 스트리밍에 CPU를 몰아준다.
+                continue
+
             boxes = detector.detect(frame)
 
             if not boxes or (boxes[0][3] - boxes[0][1]) < config.MIN_FACE_SIZE:
