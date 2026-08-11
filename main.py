@@ -10,7 +10,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import cv2
 
-import audio
 import config
 import face_db
 import proclock
@@ -70,9 +69,6 @@ def vision_loop(app, stop_event, conversation_active):
                 if now - last_greeted.get(name, 0) >= config.GREET_COOLDOWN_SEC:
                     last_greeted[name] = now
                     app.push_event(("greet", name))
-                    if not conversation_active.is_set():
-                        # 대화 중엔 같은 스피커 장치를 놓고 aplay끼리 충돌하므로 인사 소리는 생략
-                        audio.play(audio.pick_random(config.GREETING_SOUNDS_DIR))
                     print("인사:", name, round(similarity, 3))
             else:
                 app.push_event(("curious",))

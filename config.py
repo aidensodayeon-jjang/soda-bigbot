@@ -16,7 +16,6 @@ if os.path.exists(_env_path):
 
 FACES_DIR = os.path.join(BASE_DIR, "faces")
 MODELS_DIR = os.path.join(BASE_DIR, "models")
-GREETING_SOUNDS_DIR = os.path.join(BASE_DIR, "sounds", "greeting")
 
 # 얼굴 검출 (OpenCV DNN, Res10 SSD)
 DETECTOR_PROTOTXT = os.path.join(MODELS_DIR, "deploy.prototxt")
