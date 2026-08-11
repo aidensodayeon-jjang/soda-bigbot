@@ -11,31 +11,38 @@ REALTIME_URL = "wss://api.openai.com/v1/realtime?model={}".format(config.REALTIM
 SAMPLE_RATE = 24000  # Realtime API의 pcm16 기본 샘플레이트
 
 
-async def _mic_sender(ws, rec_proc):
+async def _mic_sender(ws, rec_proc, speaking):
     loop = asyncio.get_event_loop()
     while True:
         chunk = await loop.run_in_executor(None, rec_proc.stdout.read, 4800)
         if not chunk:
             break
+        if speaking.is_set():
+            # 에코 캔슬링이 없는 하드웨어라, 스피커가 말하는 동안은 마이크 입력을
+            # 보내지 않는다(안 그러면 마이크가 스피커 소리를 주워서 자기 말에 자기가 반응함).
+            continue
         await ws.send(json.dumps({
             "type": "input_audio_buffer.append",
             "audio": base64.b64encode(chunk).decode("ascii"),
         }))
 
 
-async def _receiver(ws, player, on_state):
+async def _receiver(ws, player, on_state, speaking):
     while True:
         raw = await asyncio.wait_for(ws.recv(), timeout=config.CONVERSATION_IDLE_TIMEOUT_SEC)
         event = json.loads(raw)
         kind = event.get("type")
 
         if kind == "response.output_audio.delta":
+            speaking.set()
             player.stdin.write(base64.b64decode(event["delta"]))
             player.stdin.flush()
             on_state("speaking")
         elif kind == "input_audio_buffer.speech_started":
             on_state("thinking")
         elif kind == "response.done":
+            await asyncio.sleep(0.4)  # 스피커에 남은 소리가 다 빠져나갈 시간을 준 뒤 마이크 재개
+            speaking.clear()
             on_state("idle")
         elif kind == "error":
             print("Realtime API 오류:", event)
@@ -85,9 +92,10 @@ async def _run_session(on_state):
                 },
             }))
 
-            sender_task = asyncio.ensure_future(_mic_sender(ws, rec_proc))
+            speaking = asyncio.Event()
+            sender_task = asyncio.ensure_future(_mic_sender(ws, rec_proc, speaking))
             try:
-                await _receiver(ws, player, on_state)
+                await _receiver(ws, player, on_state, speaking)
             except asyncio.TimeoutError:
                 pass
             finally:
