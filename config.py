@@ -56,7 +56,7 @@ SPEAKER_DEVICE = "plughw:CARD=BR21,DEV=0"
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 CHAT_MODEL = "gpt-4o-mini"
 TTS_VOICE = "alloy"
-MIC_DEVICE = "plughw:2,0"  # Logitech StreamCam 내장 마이크 (arecord -l 기준)
+MIC_DEVICE = "plughw:CARD=StreamCam,DEV=0"  # 카드 번호는 재부팅마다 바뀔 수 있어서 이름으로 고정
 
 # 웨이크워드 (PocketSphinx 키워드 스팟팅)
 WAKE_KEYPHRASE = "hi soda"
