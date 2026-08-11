@@ -61,4 +61,4 @@ CONVERSATION_IDLE_TIMEOUT_SEC = 30  # 응답 없이 이 시간 지나면 세션 
 # 웨이크워드 (PocketSphinx 키워드 스팟팅으로 "hi soda" 감지)
 MIC_DEVICE = "plughw:2,0"  # Logitech StreamCam 내장 마이크 (arecord -l 기준)
 WAKE_KEYPHRASE = "hi soda"
-WAKE_KWS_THRESHOLD = "1e-40"  # 작을수록(지수가 더 음수일수록) 더 잘 반응하지만 오탐도 늘어남
+WAKE_KWS_THRESHOLD = "1e-28"  # 작을수록(지수가 더 음수일수록) 더 잘 반응하지만 오탐도 늘어남
