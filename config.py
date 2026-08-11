@@ -38,6 +38,7 @@ GREETING_DURATION_MS = 4000
 MAIN_PID_FILE = os.path.join(BASE_DIR, ".main.pid")
 REGISTER_PID_FILE = os.path.join(BASE_DIR, ".register.pid")
 
-# 웨이크워드 (Vosk 오프라인 음성인식으로 "소다야"/"하이 소다" 감지)
+# 웨이크워드 (PocketSphinx 키워드 스팟팅으로 "hi soda" 감지)
 MIC_DEVICE = "plughw:2,0"  # Logitech StreamCam 내장 마이크 (arecord -l 기준)
-VOSK_MODEL_DIR = os.path.join(MODELS_DIR, "vosk-model-ko")
+WAKE_KEYPHRASE = "hi soda"
+WAKE_KWS_THRESHOLD = "1e-20"  # 낮을수록(0에 가까울수록) 잘 반응하지만 오탐도 늘어남

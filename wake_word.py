@@ -1,61 +1,55 @@
-import json
 import subprocess
 
-import vosk
+from pocketsphinx import Decoder
 
 import config
 
-vosk.SetLogLevel(-1)
 
-SAMPLE_RATE = 16000
-WAKE_PHRASES = ["소다야", "하이 소다", "hi soda"]
-
-
-def _contains_wake_word(text):
-    text = text.replace(" ", "")
-    return any(phrase.replace(" ", "") in text for phrase in WAKE_PHRASES)
+def _make_decoder():
+    ps_config = Decoder.default_config()
+    ps_config.set_string("-keyphrase", config.WAKE_KEYPHRASE)
+    ps_config.set_float("-kws_threshold", float(config.WAKE_KWS_THRESHOLD))
+    ps_config.set_string("-logfn", "/dev/null")
+    return Decoder(ps_config)
 
 
 def listen_for_wake_word(on_detected):
-    """Vosk로 마이크 입력을 실시간 전사하며 웨이크워드가 들리면 on_detected()를 호출한다."""
-    model = vosk.Model(config.VOSK_MODEL_DIR)
-    recognizer = vosk.KaldiRecognizer(model, SAMPLE_RATE)
+    """마이크 입력을 스트리밍하며 웨이크워드가 들리면 on_detected()를 호출한다."""
+    decoder = _make_decoder()
 
     rec = subprocess.Popen(
         [
             "arecord", "-D", config.MIC_DEVICE,
-            "-f", "S16_LE", "-r", str(SAMPLE_RATE), "-c", "1",
+            "-f", "S16_LE", "-r", "16000", "-c", "1",
             "-t", "raw", "-q", "-",
         ],
         stdout=subprocess.PIPE,
     )
 
+    decoder.start_utt()
     try:
         while True:
-            data = rec.stdout.read(4000)
-            if not data:
+            buf = rec.stdout.read(1024)
+            if not buf:
                 break
 
-            if recognizer.AcceptWaveform(data):
-                text = json.loads(recognizer.Result()).get("text", "")
-            else:
-                text = json.loads(recognizer.PartialResult()).get("partial", "")
+            decoder.process_raw(buf, False, False)
 
-            if text and _contains_wake_word(text):
+            if decoder.hyp() is not None:
                 on_detected()
-                recognizer.Reset()
+                decoder.end_utt()
+                decoder.start_utt()
     finally:
         rec.terminate()
 
 
 def _self_check():
-    assert _contains_wake_word("소다야 뭐해")
-    assert _contains_wake_word("하이 소다 안녕")
-    assert _contains_wake_word("hi soda turn on the light")
-    assert not _contains_wake_word("안녕하세요")
+    decoder = _make_decoder()
+    decoder.start_utt()
+    decoder.end_utt()
 
 
 if __name__ == "__main__":
     _self_check()
-    print("자가 점검 통과. 실시간 감지를 시작합니다 (Ctrl+C로 종료)...")
+    print("자가 점검 통과. 실시간 감지를 시작합니다 (Ctrl+C로 종료, '{}'라고 말해보세요)...".format(config.WAKE_KEYPHRASE))
     listen_for_wake_word(lambda: print(">>> 웨이크워드 감지!"))
