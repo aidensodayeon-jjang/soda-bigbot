@@ -52,11 +52,10 @@ REGISTER_PID_FILE = os.path.join(BASE_DIR, ".register.pid")
 # 스피커 (JieLi BR21 블루투스 스피커, USB 유선 연결)
 SPEAKER_DEVICE = "plughw:CARD=BR21,DEV=0"
 
-# GPT 실시간 음성 대화 (OpenAI Realtime API)
+# GPT 음성 대화: "hi soda" 한 번에 한 번만 녹음 → Whisper 전사 → GPT 응답 → TTS 재생
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-REALTIME_MODEL = "gpt-realtime"
-REALTIME_VOICE = "alloy"
-CONVERSATION_IDLE_TIMEOUT_SEC = 30  # 응답 없이 이 시간 지나면 세션 종료 (요금 방지)
+CHAT_MODEL = "gpt-4o-mini"
+TTS_VOICE = "alloy"
 
 # 웨이크워드 (PocketSphinx 키워드 스팟팅으로 "hi soda" 감지)
 MIC_DEVICE = "plughw:2,0"  # Logitech StreamCam 내장 마이크 (arecord -l 기준)
