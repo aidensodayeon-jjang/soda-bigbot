@@ -60,4 +60,4 @@ TTS_VOICE = "alloy"
 # 웨이크워드 (PocketSphinx 키워드 스팟팅으로 "hi soda" 감지)
 MIC_DEVICE = "plughw:2,0"  # Logitech StreamCam 내장 마이크 (arecord -l 기준)
 WAKE_KEYPHRASE = "soda ya"  # "소다야"에 가까운 영어 발음(한국어 음향 모델이 없어서 근사)
-WAKE_KWS_THRESHOLD = "1e-20"  # 작을수록(지수가 더 음수일수록) 더 잘 반응하지만 오탐도 늘어남
+WAKE_KWS_THRESHOLD = "1e-30"  # 작을수록(지수가 더 음수일수록) 더 잘 반응하지만 오탐도 늘어남
