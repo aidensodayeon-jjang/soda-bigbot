@@ -82,7 +82,12 @@ def vision_loop(app, stop_event):
 
 def _on_wake(app):
     app.push_event(("wake",))
-    voice_chat.start_conversation(on_state=lambda s: app.push_event(("state", s)))
+    try:
+        voice_chat.start_conversation(on_state=lambda s: app.push_event(("state", s)))
+    except Exception as e:
+        # 대화 세션에서 무슨 일이 나든 웨이크워드 스레드는 계속 살아있어야 한다.
+        print("대화 세션 오류:", e)
+        app.push_event(("state", "idle"))
 
 
 def main():

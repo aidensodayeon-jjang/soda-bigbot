@@ -29,7 +29,7 @@ async def _receiver(ws, player, on_state):
         event = json.loads(raw)
         kind = event.get("type")
 
-        if kind == "response.audio.delta":
+        if kind == "response.output_audio.delta":
             player.stdin.write(base64.b64decode(event["delta"]))
             player.stdin.flush()
             on_state("speaking")
@@ -42,10 +42,7 @@ async def _receiver(ws, player, on_state):
 
 
 async def _run_session(on_state):
-    headers = {
-        "Authorization": "Bearer " + config.OPENAI_API_KEY,
-        "OpenAI-Beta": "realtime=v1",
-    }
+    headers = {"Authorization": "Bearer " + config.OPENAI_API_KEY}
 
     rec_proc = subprocess.Popen(
         [
@@ -68,11 +65,19 @@ async def _run_session(on_state):
             await ws.send(json.dumps({
                 "type": "session.update",
                 "session": {
-                    "modalities": ["audio", "text"],
-                    "voice": config.REALTIME_VOICE,
-                    "input_audio_format": "pcm16",
-                    "output_audio_format": "pcm16",
-                    "turn_detection": {"type": "server_vad"},
+                    "type": "realtime",
+                    "model": config.REALTIME_MODEL,
+                    "output_modalities": ["audio"],
+                    "audio": {
+                        "input": {
+                            "format": {"type": "audio/pcm", "rate": SAMPLE_RATE},
+                            "turn_detection": {"type": "server_vad"},
+                        },
+                        "output": {
+                            "format": {"type": "audio/pcm"},
+                            "voice": config.REALTIME_VOICE,
+                        },
+                    },
                 },
             }))
 

@@ -54,7 +54,7 @@ SPEAKER_DEVICE = "plughw:CARD=BR21,DEV=0"
 
 # GPT 실시간 음성 대화 (OpenAI Realtime API)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-REALTIME_MODEL = "gpt-4o-realtime-preview"
+REALTIME_MODEL = "gpt-realtime"
 REALTIME_VOICE = "alloy"
 CONVERSATION_IDLE_TIMEOUT_SEC = 30  # 응답 없이 이 시간 지나면 세션 종료 (요금 방지)
 
