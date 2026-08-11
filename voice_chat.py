@@ -105,7 +105,7 @@ def _chat_reply(user_text):
     return resp.json()["choices"][0]["message"]["content"].strip()
 
 
-def _speak(text):
+def speak(text):
     resp = requests.post(
         "https://api.openai.com/v1/audio/speech",
         headers={"Authorization": "Bearer " + config.OPENAI_API_KEY},
@@ -154,7 +154,7 @@ def start_conversation(on_state=lambda state: None):
         print("소다봇:", reply)
 
         on_state("speaking")
-        _speak(reply)
+        speak(reply)
     finally:
         os.remove(wav_path)
         on_state("idle")

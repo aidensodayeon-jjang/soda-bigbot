@@ -52,6 +52,9 @@ REGISTER_PID_FILE = os.path.join(BASE_DIR, ".register.pid")
 # 스피커 (JieLi BR21 블루투스 스피커, USB 유선 연결)
 SPEAKER_DEVICE = "plughw:CARD=BR21,DEV=0"
 
+# 모바일 웹 리모컨
+WEB_PORT = 8080
+
 # GPT 음성 대화: "hi soda" 또는 스페이스바로 한 번 녹음 → Whisper 전사 → GPT 응답 → TTS 재생
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 CHAT_MODEL = "gpt-4o-mini"

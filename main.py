@@ -16,6 +16,7 @@ import face_db
 import proclock
 import voice_chat
 import wake_word
+import web
 from face_display import SodabotFace
 from vision import FaceDetector, SFaceEmbedder
 
@@ -146,6 +147,7 @@ def main():
         ).start()
 
     app.on_trigger = trigger  # 스페이스바 (즉시 확실하게 대화 시작)
+    web.start_server(app, trigger, port=config.WEB_PORT)
 
     # 음성 웨이크워드("hi soda"). 자체 스레드에서 감지 대기하다가, 감지되면
     # _on_trigger를 직접(같은 스레드에서) 불러서 대화가 끝날 때까지 마이크를 넘겨준다.
