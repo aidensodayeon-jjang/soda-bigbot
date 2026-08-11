@@ -22,7 +22,9 @@ def listen_for_wake_word(on_detected):
         [
             "arecord", "-D", config.MIC_DEVICE,
             "-f", "S16_LE", "-r", "16000", "-c", "1",
-            "-t", "raw", "-q", "-",
+            "-t", "raw", "-q",
+            "--buffer-time=1000000",  # 카메라 인식과 CPU를 나눠 쓸 때 오버런 방지용 여유 버퍼(1초)
+            "-",
         ],
         stdout=subprocess.PIPE,
     )
