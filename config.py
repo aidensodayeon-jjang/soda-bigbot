@@ -52,8 +52,12 @@ REGISTER_PID_FILE = os.path.join(BASE_DIR, ".register.pid")
 # 스피커 (JieLi BR21 블루투스 스피커, USB 유선 연결)
 SPEAKER_DEVICE = "plughw:CARD=BR21,DEV=0"
 
-# GPT 음성 대화: 스페이스바 누르면 한 번 녹음 → Whisper 전사 → GPT 응답 → TTS 재생
+# GPT 음성 대화: "hi soda" 또는 스페이스바로 한 번 녹음 → Whisper 전사 → GPT 응답 → TTS 재생
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 CHAT_MODEL = "gpt-4o-mini"
 TTS_VOICE = "alloy"
 MIC_DEVICE = "plughw:2,0"  # Logitech StreamCam 내장 마이크 (arecord -l 기준)
+
+# 웨이크워드 (PocketSphinx 키워드 스팟팅)
+WAKE_KEYPHRASE = "hi soda"
+WAKE_KWS_THRESHOLD = "1e-28"  # 작을수록(지수가 더 음수일수록) 더 잘 반응하지만 오탐도 늘어남

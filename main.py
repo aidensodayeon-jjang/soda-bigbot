@@ -14,6 +14,7 @@ import config
 import face_db
 import proclock
 import voice_chat
+import wake_word
 from face_display import SodabotFace
 from vision import FaceDetector, SFaceEmbedder
 
@@ -126,7 +127,16 @@ def main():
             target=_on_trigger, args=(app, conversation_active), daemon=True
         ).start()
 
-    app.on_trigger = trigger
+    app.on_trigger = trigger  # 스페이스바 (즉시 확실하게 대화 시작)
+
+    # 음성 웨이크워드("hi soda"). 자체 스레드에서 감지 대기하다가, 감지되면
+    # _on_trigger를 직접(같은 스레드에서) 불러서 대화가 끝날 때까지 마이크를 넘겨준다.
+    wake_thread = threading.Thread(
+        target=wake_word.listen_for_wake_word,
+        args=(lambda: _on_trigger(app, conversation_active),),
+        daemon=True,
+    )
+    wake_thread.start()
 
     try:
         app.run()
