@@ -1,3 +1,4 @@
+import glob
 import os
 import sys
 import threading
@@ -21,6 +22,20 @@ from vision import FaceDetector, SFaceEmbedder
 DB_RELOAD_SEC = 30  # register_face.py로 새로 등록된 얼굴을 주기적으로 반영
 
 
+def _find_camera_index(name_substr, fallback):
+    """USB 웹캠은 재연결될 때마다 /dev/videoN 번호가 바뀔 수 있어서,
+    고정 인덱스 대신 장치 이름으로 찾는다."""
+    for path in sorted(glob.glob("/sys/class/video4linux/video*/name")):
+        try:
+            with open(path) as f:
+                dev_name = f.read().strip()
+        except OSError:
+            continue
+        if name_substr in dev_name:
+            return int(path.split("/")[-2].replace("video", ""))
+    return fallback
+
+
 def vision_loop(app, stop_event, conversation_active):
     detector = FaceDetector()
     embedder = SFaceEmbedder()
@@ -28,7 +43,8 @@ def vision_loop(app, stop_event, conversation_active):
     names, matrix = face_db.load_all()
     print("등록된 얼굴:", len(names), "명")
 
-    cap = cv2.VideoCapture(config.CAMERA_INDEX, cv2.CAP_V4L2)
+    camera_index = _find_camera_index("StreamCam", config.CAMERA_INDEX)
+    cap = cv2.VideoCapture(camera_index, cv2.CAP_V4L2)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.CAMERA_WIDTH)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.CAMERA_HEIGHT)
@@ -48,6 +64,8 @@ def vision_loop(app, stop_event, conversation_active):
         while not stop_event.is_set():
             ret, frame = cap.read()
             if not ret:
+                # 장치가 끊기는 등 계속 실패할 때 CPU를 100% 태우며 도는 걸 방지
+                time.sleep(0.2)
                 continue
 
             if conversation_active.is_set():
