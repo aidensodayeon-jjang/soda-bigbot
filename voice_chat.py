@@ -116,13 +116,19 @@ def _speak(text):
             "response_format": "wav",
         },
         timeout=30,
+        stream=True,
     )
     resp.raise_for_status()
 
+    # 전체 응답을 다 받고 재생하면 체감 지연이 크므로, 도착하는 대로 바로 흘려보낸다.
     player = subprocess.Popen(
         ["aplay", "-q", "-D", config.SPEAKER_DEVICE, "-"], stdin=subprocess.PIPE,
     )
-    player.communicate(resp.content)
+    for chunk in resp.iter_content(chunk_size=4096):
+        if chunk:
+            player.stdin.write(chunk)
+    player.stdin.close()
+    player.wait()
 
 
 def start_conversation(on_state=lambda state: None):
