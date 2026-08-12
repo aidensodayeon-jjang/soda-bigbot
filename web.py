@@ -1,6 +1,7 @@
 import json
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from socketserver import ThreadingMixIn
 
 import voice_chat
 from face_display import KEY_STATES
@@ -47,6 +48,10 @@ INDEX_HTML = """<!doctype html>
   <input type="text" id="sayText" placeholder="소다봇이 말할 문장">
   <button class="big" onclick="say()">🔊 말하기</button>
 
+  <h2>얼굴 등록</h2>
+  <input type="text" id="regName" placeholder="이름">
+  <button class="big" onclick="register()">📸 얼굴 등록 (카메라를 봐주세요)</button>
+
   <div id="status"></div>
 
 <script>
@@ -55,12 +60,14 @@ function setStatus(msg) {{
 }}
 function post(path, body) {{
   setStatus('전송 중...');
-  fetch(path, {{
+  return fetch(path, {{
     method: 'POST',
     headers: {{'Content-Type': 'application/json'}},
     body: body ? JSON.stringify(body) : undefined,
   }})
-    .then(r => setStatus(r.ok ? '완료' : '오류: ' + r.status))
+    .then(r => r.text().then(text => {{
+      setStatus(r.ok ? '완료' : '오류: ' + text);
+    }}))
     .catch(e => setStatus('오류: ' + e));
 }}
 function trigger() {{ post('/trigger'); }}
@@ -69,6 +76,12 @@ function say() {{
   const text = document.getElementById('sayText').value.trim();
   if (!text) return;
   post('/say', {{text: text}});
+}}
+function register() {{
+  const name = document.getElementById('regName').value.trim();
+  if (!name) return;
+  setStatus('등록 중... 로봇 카메라를 봐주세요 (몇 초 소요)');
+  post('/register', {{name: name}});
 }}
 </script>
 </body>
@@ -131,6 +144,10 @@ def _make_handler(hooks):
                     data = self._read_json()
                     hooks["say"](data["text"])
                     self._send(200, b"ok")
+                elif self.path == "/register":
+                    data = self._read_json()
+                    hooks["register"](data["name"])
+                    self._send(200, b"ok")
                 else:
                     self._send(404, b"not found")
             except Exception as e:
@@ -145,17 +162,23 @@ def _self_check():
         assert "setExpression('{}')".format(name) in html
 
 
-def start_server(app, trigger, port=8080):
-    """main.py에서 호출. 모바일 웹 리모컨을 백그라운드 스레드로 띄운다."""
+class _ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
+    daemon_threads = True
+    allow_reuse_address = True  # 재시작 직후 TIME_WAIT로 포트 충돌하는 것 방지
+
+
+def start_server(app, trigger, register, port=8080):
+    """main.py에서 호출. 모바일 웹 리모컨을 백그라운드 스레드로 띄운다.
+    /register는 몇 초씩 블로킹되므로 요청마다 스레드를 띄우는 서버를 쓴다."""
     hooks = {
         "trigger": trigger,
         "set_state": lambda name: app.push_event(("state", name)),
         "say": lambda text: threading.Thread(
             target=voice_chat.speak, args=(text,), daemon=True
         ).start(),
+        "register": register,
     }
-    HTTPServer.allow_reuse_address = True  # 재시작 직후 TIME_WAIT로 포트 충돌하는 것 방지
-    server = HTTPServer(("0.0.0.0", port), _make_handler(hooks))
+    server = _ThreadingHTTPServer(("0.0.0.0", port), _make_handler(hooks))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     print("웹 리모컨: http://<젯슨 IP>:{}".format(port))
     return server

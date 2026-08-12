@@ -1,5 +1,6 @@
 import glob
 import os
+import queue
 import sys
 import threading
 import time
@@ -10,6 +11,7 @@ if not os.environ.get("DISPLAY"):
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import cv2
+import numpy as np
 
 import config
 import face_db
@@ -37,7 +39,43 @@ def _find_camera_index(name_substr, fallback):
     return fallback
 
 
-def vision_loop(app, stop_event, conversation_active):
+def _capture_registration(cap, detector, embedder, name):
+    """이미 열려 있는 카메라를 그대로 써서 얼굴 샘플을 여러 장 모아 등록한다
+    (register_face.py와 같은 방식, 별도 카메라 핸들을 새로 열지 않음)."""
+    samples = []
+    last_capture = 0
+    fail_count = 0
+
+    while len(samples) < config.REGISTER_SAMPLES:
+        ret, frame = cap.read()
+        if not ret:
+            fail_count += 1
+            if fail_count >= 60:
+                raise RuntimeError("카메라에서 영상을 받지 못했습니다")
+            continue
+
+        boxes = detector.detect(frame)
+        if not boxes:
+            continue
+
+        x1, y1, x2, y2, score = boxes[0]
+        margin = int((x2 - x1) * 0.15)
+        x1c = max(0, x1 - margin)
+        y1c = max(0, y1 - margin)
+        x2c = min(frame.shape[1], x2 + margin)
+        y2c = min(frame.shape[0], y2 + margin)
+        face = frame[y1c:y2c, x1c:x2c]
+
+        now = time.time()
+        if now - last_capture >= config.REGISTER_CAPTURE_INTERVAL:
+            samples.append(embedder.embed(face))
+            last_capture = now
+
+    final_embedding = np.mean(np.stack(samples), axis=0)
+    return face_db.save_person(name, final_embedding)
+
+
+def vision_loop(app, stop_event, conversation_active, register_queue):
     detector = FaceDetector()
     embedder = SFaceEmbedder()
 
@@ -63,6 +101,22 @@ def vision_loop(app, stop_event, conversation_active):
 
     try:
         while not stop_event.is_set():
+            try:
+                name_to_reg, result, done = register_queue.get_nowait()
+            except queue.Empty:
+                pass
+            else:
+                app.push_event(("state", "thinking"))
+                try:
+                    result["path"] = _capture_registration(cap, detector, embedder, name_to_reg)
+                    names, matrix = face_db.load_all()
+                    app.push_event(("state", "happy"))
+                except Exception as e:
+                    result["error"] = str(e)
+                    app.push_event(("state", "worried"))
+                done.set()
+                continue
+
             ret, frame = cap.read()
             if not ret:
                 # 장치가 끊기는 등 계속 실패할 때 CPU를 100% 태우며 도는 걸 방지
@@ -136,8 +190,11 @@ def main():
 
     stop_event = threading.Event()
     conversation_active = threading.Event()
+    register_queue = queue.Queue()
     worker = threading.Thread(
-        target=vision_loop, args=(app, stop_event, conversation_active), daemon=True
+        target=vision_loop,
+        args=(app, stop_event, conversation_active, register_queue),
+        daemon=True,
     )
     worker.start()
 
@@ -146,8 +203,19 @@ def main():
             target=_on_trigger, args=(app, conversation_active), daemon=True
         ).start()
 
+    def register(name):
+        """웹 리모컨에서 호출. vision_loop가 카메라로 등록을 처리할 때까지 블로킹한다."""
+        result = {}
+        done = threading.Event()
+        register_queue.put((name, result, done))
+        if not done.wait(timeout=30):
+            raise TimeoutError("등록 시간 초과")
+        if "error" in result:
+            raise RuntimeError(result["error"])
+        return result["path"]
+
     app.on_trigger = trigger  # 스페이스바 (즉시 확실하게 대화 시작)
-    web.start_server(app, trigger, port=config.WEB_PORT)
+    web.start_server(app, trigger, register, port=config.WEB_PORT)
 
     # 음성 웨이크워드("hi soda"). 자체 스레드에서 감지 대기하다가, 감지되면
     # _on_trigger를 직접(같은 스레드에서) 불러서 대화가 끝날 때까지 마이크를 넘겨준다.
