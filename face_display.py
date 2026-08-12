@@ -62,10 +62,12 @@ class SodabotFace:
         self.events = queue.Queue()
         self.on_trigger = lambda: None  # main.py가 채워 넣는 대화 시작 콜백
 
-        # 상태별 캐릭터 그림이 있으면 도형 대신 그걸 쓴다 (준비된 상태만 자동으로 적용됨).
+        # 상태별 캐릭터 그림이 있으면 도형 대신 그걸 쓴다. character/ 폴더에 상태 이름과
+        # 같은 파일(예: happy.png)을 넣기만 하면 코드 수정 없이 자동으로 적용된다.
         # use_character로 새 그림 / 원래 도형 버전을 언제든 토글할 수 있다.
         self.character_images = {}
-        for key in ("idle_open", "idle_blink", "speaking_closed", "speaking_open", "sleepy"):
+        image_keys = ("idle_open", "idle_blink", "speaking_closed", "speaking_open") + tuple(KEY_STATES)
+        for key in image_keys:
             path = os.path.join(config.CHARACTER_DIR, key + ".png")
             if os.path.exists(path):
                 self.character_images[key] = tk.PhotoImage(file=path)
@@ -349,10 +351,9 @@ class SodabotFace:
             key = "idle_blink" if self.blink else "idle_open"
         elif self.state == "speaking":
             key = "speaking_open" if self.speaking_open else "speaking_closed"
-        elif self.state == "sleepy":
-            key = "sleepy"
         else:
-            return None
+            # sleepy/happy/surprised/thinking/curious/excited/worried: 상태 이름 = 파일 이름
+            key = self.state
 
         return key if key in self.character_images else None
 
