@@ -5,3 +5,5 @@ models/
 faces/
 .env
 .gdrive-key.json
+.gdrive-client-secret.json
+.gdrive-token.json
