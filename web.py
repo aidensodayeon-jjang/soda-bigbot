@@ -48,6 +48,8 @@ INDEX_HTML = """<!doctype html>
   <input type="text" id="sayText" placeholder="소다봇이 말할 문장">
   <button class="big" onclick="say()">🔊 말하기</button>
 
+  <button class="big" onclick="post('/toggle_character')">🖼️ 캐릭터 그림 ↔ 원래 도형</button>
+
   <h2>얼굴 등록</h2>
   <input type="text" id="regName" placeholder="이름">
   <button class="big" onclick="register()">📸 얼굴 등록 (카메라를 봐주세요)</button>
@@ -144,6 +146,9 @@ def _make_handler(hooks):
                     data = self._read_json()
                     hooks["say"](data["text"])
                     self._send(200, b"ok")
+                elif self.path == "/toggle_character":
+                    hooks["toggle_character"]()
+                    self._send(200, b"ok")
                 elif self.path == "/register":
                     data = self._read_json()
                     hooks["register"](data["name"])
@@ -177,6 +182,7 @@ def start_server(app, trigger, register, port=8080):
             target=voice_chat.speak, args=(text,), daemon=True
         ).start(),
         "register": register,
+        "toggle_character": lambda: app.push_event(("toggle_character",)),
     }
     server = _ThreadingHTTPServer(("0.0.0.0", port), _make_handler(hooks))
     threading.Thread(target=server.serve_forever, daemon=True).start()

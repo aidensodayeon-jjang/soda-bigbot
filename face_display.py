@@ -61,14 +61,17 @@ class SodabotFace:
         self.on_trigger = lambda: None  # main.py가 채워 넣는 대화 시작 콜백
 
         # 상태별 캐릭터 그림이 있으면 도형 대신 그걸 쓴다 (지금은 idle만 준비됨).
+        # use_character로 새 그림 / 원래 도형 버전을 언제든 토글할 수 있다.
         self.character_images = {}
         for key in ("idle_open", "idle_blink"):
             path = os.path.join(config.CHARACTER_DIR, key + ".png")
             if os.path.exists(path):
                 self.character_images[key] = tk.PhotoImage(file=path)
+        self.use_character = True
 
         self.root.bind("<Escape>", lambda e: self.root.destroy())
         self.root.bind("<space>", lambda e: self.on_trigger())
+        self.root.bind("0", lambda e: self.toggle_character())
         for i, name in enumerate(KEY_STATES, start=1):
             self.root.bind(str(i), lambda e, n=name: self.set_state(n))
 
@@ -137,6 +140,9 @@ class SodabotFace:
             if value == "worried":
                 self.root.after(2000, lambda: self._end_greeting("worried"))
 
+        elif kind == "toggle_character":
+            self.toggle_character()
+
         elif kind == "caption":
             # show_caption과 달리 자동으로 안 지워짐 (등록 진행 상황처럼 빠르게
             # 계속 갱신되는 안내문에 사용. 빈 문자열을 보내면 지운다).
@@ -159,6 +165,10 @@ class SodabotFace:
         self.blink = False
         self.eye_dx = 0
         self.eye_dy = 0
+        self._draw()
+
+    def toggle_character(self):
+        self.use_character = not self.use_character
         self._draw()
 
     def show_caption(self, text, duration_ms=4000):
@@ -327,6 +337,9 @@ class SodabotFace:
         self._worried_eye(RIGHT_X, EYE_Y, False)
         self._mouth_sad()
 
+    def _using_idle_image(self):
+        return self.use_character and self.state == "idle" and "idle_open" in self.character_images
+
     def _draw_idle_image(self):
         # 캐릭터 그림 자체가 흰 배경이라, 화면 전체를 흰색으로 채워 이음새 없이 보이게 한다.
         self.canvas.create_rectangle(0, 0, W, H, fill="#FFFFFF", outline="")
@@ -336,7 +349,7 @@ class SodabotFace:
     def _draw(self):
         self._clear()
 
-        if self.state == "idle" and "idle_open" in self.character_images:
+        if self._using_idle_image():
             self._draw_idle_image()
             self._draw_caption()
             return
@@ -367,7 +380,7 @@ class SodabotFace:
         if not self.caption:
             return
 
-        on_white_bg = self.state == "idle" and "idle_open" in self.character_images
+        on_white_bg = self._using_idle_image()
         self.canvas.create_text(
             W / 2, H - 35,
             text=self.caption,
