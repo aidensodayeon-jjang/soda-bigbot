@@ -9,7 +9,7 @@ import config
 # TV/스피커에서 나오는 배경 소음은 대체로 사용자가 직접 부를 때보다 마이크에
 # 작게 들어온다. 그래서 KWS 임계값은 느슨하게 열어 실제 "hi soda"를 잘 잡되,
 # 감지 순간 음량이 이 값보다 작으면(=먼 곳 소리로 추정) 무시한다.
-MIN_DETECT_RMS = 150
+MIN_DETECT_RMS = 400
 
 
 def _make_decoder():
