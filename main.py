@@ -39,19 +39,44 @@ def _find_camera_index(name_substr, fallback):
     return fallback
 
 
-def _capture_registration(cap, detector, embedder, name):
+def _read_frame_or_raise(cap, fail_count):
+    ret, frame = cap.read()
+    if ret:
+        return frame, 0
+
+    fail_count += 1
+    if fail_count >= 60:
+        raise RuntimeError("카메라에서 영상을 받지 못했습니다")
+    return None, fail_count
+
+
+def _capture_registration(cap, detector, embedder, name, app):
     """이미 열려 있는 카메라를 그대로 써서 얼굴 샘플을 여러 장 모아 등록한다
-    (register_face.py와 같은 방식, 별도 카메라 핸들을 새로 열지 않음)."""
-    samples = []
-    last_capture = 0
+    (register_face.py와 같은 방식, 별도 카메라 핸들을 새로 열지 않음).
+    사용자가 로봇 화면을 보고 준비할 수 있게 대기/카운트다운/진행상황을 캡션으로 안내한다."""
     fail_count = 0
 
+    # 1) 얼굴이 잡힐 때까지 대기
+    app.push_event(("caption", "{}님, 카메라를 봐주세요".format(name)))
+    while True:
+        frame, fail_count = _read_frame_or_raise(cap, fail_count)
+        if frame is None:
+            continue
+        if detector.detect(frame):
+            break
+
+    # 2) 준비 카운트다운
+    for n in (3, 2, 1):
+        app.push_event(("caption", "{}초 뒤 촬영 시작...".format(n)))
+        time.sleep(1)
+
+    # 3) 버스트 촬영 (고개를 살짝씩 움직이며 여러 각도 확보)
+    samples = []
+    last_capture = 0
+
     while len(samples) < config.REGISTER_SAMPLES:
-        ret, frame = cap.read()
-        if not ret:
-            fail_count += 1
-            if fail_count >= 60:
-                raise RuntimeError("카메라에서 영상을 받지 못했습니다")
+        frame, fail_count = _read_frame_or_raise(cap, fail_count)
+        if frame is None:
             continue
 
         boxes = detector.detect(frame)
@@ -70,9 +95,21 @@ def _capture_registration(cap, detector, embedder, name):
         if now - last_capture >= config.REGISTER_CAPTURE_INTERVAL:
             samples.append(embedder.embed(face))
             last_capture = now
+            app.push_event((
+                "caption",
+                "촬영 중 {} / {} — 고개를 살짝씩 움직여주세요".format(
+                    len(samples), config.REGISTER_SAMPLES
+                ),
+            ))
 
     final_embedding = np.mean(np.stack(samples), axis=0)
-    return face_db.save_person(name, final_embedding)
+    path = face_db.save_person(name, final_embedding)
+
+    app.push_event(("caption", "등록 완료: {}!".format(name)))
+    time.sleep(2)
+    app.push_event(("caption", ""))
+
+    return path
 
 
 def vision_loop(app, stop_event, conversation_active, register_queue):
@@ -108,7 +145,9 @@ def vision_loop(app, stop_event, conversation_active, register_queue):
             else:
                 app.push_event(("state", "thinking"))
                 try:
-                    result["path"] = _capture_registration(cap, detector, embedder, name_to_reg)
+                    result["path"] = _capture_registration(
+                        cap, detector, embedder, name_to_reg, app
+                    )
                     names, matrix = face_db.load_all()
                     app.push_event(("state", "happy"))
                 except Exception as e:

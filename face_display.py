@@ -130,6 +130,12 @@ class SodabotFace:
             if value == "worried":
                 self.root.after(2000, lambda: self._end_greeting("worried"))
 
+        elif kind == "caption":
+            # show_caption과 달리 자동으로 안 지워짐 (등록 진행 상황처럼 빠르게
+            # 계속 갱신되는 안내문에 사용. 빈 문자열을 보내면 지운다).
+            self.caption = event[1]
+            self._draw()
+
     def _end_greeting(self, expected_state):
         if self.state == expected_state:
             self.set_state("idle")
