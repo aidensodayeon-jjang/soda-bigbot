@@ -361,9 +361,9 @@ class SodabotFace:
         # 캐릭터 그림 자체가 흰 배경이라, 화면 전체를 흰색으로 채워 이음새 없이 보이게 한다.
         self.canvas.create_rectangle(0, 0, W, H, fill="#FFFFFF", outline="")
 
-        # 정지 사진처럼 안 보이게, 모든 상태에 숨 쉬듯 미세한 상하/좌우 흔들림을 준다.
-        # sleepy는 조금 더 크고 느리게 흔들어 "졸림" 느낌을 강조.
-        speed, amp_y, amp_x = (1.5, 6, 0) if key == "sleepy" else (2.2, 3, 2)
+        # 정지 사진처럼 안 보이게, 눈에 띄게 계속 들썩이는 움직임을 준다.
+        # sleepy는 더 느리고 차분하게(졸린 느낌), 나머지는 통통 튀듯 크고 빠르게.
+        speed, amp_y, amp_x = (1.2, 10, 3) if key == "sleepy" else (3.5, 16, 8)
         t = time.time()
         y = H / 2 + math.sin(t * speed) * amp_y
         x = W / 2 + math.sin(t * speed * 0.6) * amp_x
