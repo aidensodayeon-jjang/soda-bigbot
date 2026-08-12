@@ -148,6 +148,7 @@ def start_server(app, trigger, port=8080):
             target=voice_chat.speak, args=(text,), daemon=True
         ).start(),
     }
+    HTTPServer.allow_reuse_address = True  # 재시작 직후 TIME_WAIT로 포트 충돌하는 것 방지
     server = HTTPServer(("0.0.0.0", port), _make_handler(hooks))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     print("웹 리모컨: http://<젯슨 IP>:{}".format(port))
