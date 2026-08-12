@@ -1,8 +1,6 @@
-import math
 import os
 import queue
 import random
-import time
 import tkinter as tk
 
 if not os.environ.get("DISPLAY"):
@@ -32,7 +30,7 @@ EYE_RADIUS = 28
 
 MOUTH_Y = 345
 
-NO_BLINK_STATES = ("happy", "sleepy", "excited")
+NO_BLINK_STATES = ("sleepy",)  # 이미 눈을 감고 있는 상태라 깜빡임이 필요 없음
 KEY_STATES = [
     "idle", "happy", "surprised", "thinking",
     "sleepy", "speaking", "curious", "excited", "worried",
@@ -66,7 +64,8 @@ class SodabotFace:
         # 같은 파일(예: happy.png)을 넣기만 하면 코드 수정 없이 자동으로 적용된다.
         # use_character로 새 그림 / 원래 도형 버전을 언제든 토글할 수 있다.
         self.character_images = {}
-        image_keys = ("idle_open", "idle_blink", "speaking_closed", "speaking_open") + tuple(KEY_STATES)
+        image_keys = ("idle_open", "idle_blink", "speaking_closed", "speaking_open")
+        image_keys += tuple(KEY_STATES) + tuple(name + "_blink" for name in KEY_STATES)
         for key in image_keys:
             path = os.path.join(config.CHARACTER_DIR, key + ".png")
             if os.path.exists(path):
@@ -83,7 +82,6 @@ class SodabotFace:
         self._schedule_blink()
         self._move_eyes()
         self._animate_speaking()
-        self._animate_character_bob()
         self._poll_events()
 
     # -----------------------------------------------------
@@ -352,23 +350,17 @@ class SodabotFace:
         elif self.state == "speaking":
             key = "speaking_open" if self.speaking_open else "speaking_closed"
         else:
-            # sleepy/happy/surprised/thinking/curious/excited/worried: 상태 이름 = 파일 이름
-            key = self.state
+            # happy/surprised/thinking/curious/excited/worried: {상태}_blink가 있으면
+            # 눈 깜빡일 때 그걸 쓰고, 없으면 기본 그림 그대로.
+            blink_key = self.state + "_blink"
+            key = blink_key if self.blink and blink_key in self.character_images else self.state
 
         return key if key in self.character_images else None
 
     def _draw_character_image(self, key):
         # 캐릭터 그림 자체가 흰 배경이라, 화면 전체를 흰색으로 채워 이음새 없이 보이게 한다.
         self.canvas.create_rectangle(0, 0, W, H, fill="#FFFFFF", outline="")
-
-        # 정지 사진처럼 안 보이게, 눈에 띄게 계속 들썩이는 움직임을 준다.
-        # sleepy는 더 느리고 차분하게(졸린 느낌), 나머지는 통통 튀듯 크고 빠르게.
-        speed, amp_y, amp_x = (1.2, 10, 3) if key == "sleepy" else (3.5, 16, 8)
-        t = time.time()
-        y = H / 2 + math.sin(t * speed) * amp_y
-        x = W / 2 + math.sin(t * speed * 0.6) * amp_x
-
-        self.canvas.create_image(x, y, image=self.character_images[key])
+        self.canvas.create_image(W / 2, H / 2, image=self.character_images[key])
 
     def _draw(self):
         self._clear()
@@ -449,12 +441,6 @@ class SodabotFace:
 
         self.root.after(220, self._animate_speaking)
 
-    def _animate_character_bob(self):
-        # 캐릭터 그림이 떠 있는 동안엔 계속 다시 그려서 숨쉬는 흔들림이 이어지게 한다.
-        if self._character_image_key() is not None:
-            self._draw()
-
-        self.root.after(80, self._animate_character_bob)
 
 
 if __name__ == "__main__":
