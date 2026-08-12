@@ -9,11 +9,17 @@ INDEX_HTML = """<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>소다봇 리모컨</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="소다봇">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23000'/%3E%3Ctext x='50' y='66' font-size='56' text-anchor='middle'%3E%F0%9F%A5%A4%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='72' font-size='72' text-anchor='middle'%3E%F0%9F%A5%A4%3C/text%3E%3C/svg%3E">
 <style>
   body {{ font-family: -apple-system, sans-serif; background: #0b0b0f; color: #fff;
-         margin: 0; padding: 24px 16px 60px; }}
+         margin: 0; padding: calc(24px + env(safe-area-inset-top)) 16px
+         calc(60px + env(safe-area-inset-bottom)); }}
   h1 {{ font-size: 20px; margin: 0 0 20px; }}
   h2 {{ font-size: 14px; color: #9aa; margin: 28px 0 10px; }}
   button {{ font-size: 16px; padding: 14px; border: none; border-radius: 12px;
