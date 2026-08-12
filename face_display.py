@@ -83,7 +83,7 @@ class SodabotFace:
         self._schedule_blink()
         self._move_eyes()
         self._animate_speaking()
-        self._animate_sleepy()
+        self._animate_character_bob()
         self._poll_events()
 
     # -----------------------------------------------------
@@ -361,12 +361,14 @@ class SodabotFace:
         # 캐릭터 그림 자체가 흰 배경이라, 화면 전체를 흰색으로 채워 이음새 없이 보이게 한다.
         self.canvas.create_rectangle(0, 0, W, H, fill="#FFFFFF", outline="")
 
-        y = H / 2
-        if key == "sleepy":
-            # 숨 쉬듯 천천히 위아래로 흔들리는 효과
-            y += math.sin(time.time() * 1.5) * 6
+        # 정지 사진처럼 안 보이게, 모든 상태에 숨 쉬듯 미세한 상하/좌우 흔들림을 준다.
+        # sleepy는 조금 더 크고 느리게 흔들어 "졸림" 느낌을 강조.
+        speed, amp_y, amp_x = (1.5, 6, 0) if key == "sleepy" else (2.2, 3, 2)
+        t = time.time()
+        y = H / 2 + math.sin(t * speed) * amp_y
+        x = W / 2 + math.sin(t * speed * 0.6) * amp_x
 
-        self.canvas.create_image(W / 2, y, image=self.character_images[key])
+        self.canvas.create_image(x, y, image=self.character_images[key])
 
     def _draw(self):
         self._clear()
@@ -447,11 +449,12 @@ class SodabotFace:
 
         self.root.after(220, self._animate_speaking)
 
-    def _animate_sleepy(self):
-        if self.state == "sleepy":
+    def _animate_character_bob(self):
+        # 캐릭터 그림이 떠 있는 동안엔 계속 다시 그려서 숨쉬는 흔들림이 이어지게 한다.
+        if self._character_image_key() is not None:
             self._draw()
 
-        self.root.after(80, self._animate_sleepy)
+        self.root.after(80, self._animate_character_bob)
 
 
 if __name__ == "__main__":
