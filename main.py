@@ -121,7 +121,7 @@ def _capture_registration(cap, detector, embedder, name, app):
 
 def _backup_photo(frame, name):
     """등록 사진 한 장을 구글 드라이브(원생 사진 폴더)에 백업. 실패해도 등록 자체는 이미 끝난 뒤라 무시."""
-    if frame is None or not os.path.exists(config.GDRIVE_KEY_PATH):
+    if frame is None or not os.path.exists(config.GDRIVE_CLIENT_SECRET_PATH):
         return
 
     def _upload():
