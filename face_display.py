@@ -60,10 +60,10 @@ class SodabotFace:
         self.events = queue.Queue()
         self.on_trigger = lambda: None  # main.py가 채워 넣는 대화 시작 콜백
 
-        # 상태별 캐릭터 그림이 있으면 도형 대신 그걸 쓴다 (지금은 idle만 준비됨).
+        # 상태별 캐릭터 그림이 있으면 도형 대신 그걸 쓴다 (지금은 idle/speaking만 준비됨).
         # use_character로 새 그림 / 원래 도형 버전을 언제든 토글할 수 있다.
         self.character_images = {}
-        for key in ("idle_open", "idle_blink"):
+        for key in ("idle_open", "idle_blink", "speaking_closed", "speaking_open"):
             path = os.path.join(config.CHARACTER_DIR, key + ".png")
             if os.path.exists(path):
                 self.character_images[key] = tk.PhotoImage(file=path)
@@ -337,20 +337,31 @@ class SodabotFace:
         self._worried_eye(RIGHT_X, EYE_Y, False)
         self._mouth_sad()
 
-    def _using_idle_image(self):
-        return self.use_character and self.state == "idle" and "idle_open" in self.character_images
+    def _character_image_key(self):
+        """현재 상태에 맞는 캐릭터 그림 키. 그림이 준비 안 된 상태면 None(도형 폴백)."""
+        if not self.use_character:
+            return None
 
-    def _draw_idle_image(self):
+        if self.state == "idle":
+            key = "idle_blink" if self.blink else "idle_open"
+        elif self.state == "speaking":
+            key = "speaking_open" if self.speaking_open else "speaking_closed"
+        else:
+            return None
+
+        return key if key in self.character_images else None
+
+    def _draw_character_image(self, key):
         # 캐릭터 그림 자체가 흰 배경이라, 화면 전체를 흰색으로 채워 이음새 없이 보이게 한다.
         self.canvas.create_rectangle(0, 0, W, H, fill="#FFFFFF", outline="")
-        key = "idle_blink" if self.blink else "idle_open"
         self.canvas.create_image(W / 2, H / 2, image=self.character_images[key])
 
     def _draw(self):
         self._clear()
 
-        if self._using_idle_image():
-            self._draw_idle_image()
+        image_key = self._character_image_key()
+        if image_key:
+            self._draw_character_image(image_key)
             self._draw_caption()
             return
 
@@ -380,7 +391,7 @@ class SodabotFace:
         if not self.caption:
             return
 
-        on_white_bg = self._using_idle_image()
+        on_white_bg = self._character_image_key() is not None
         self.canvas.create_text(
             W / 2, H - 35,
             text=self.caption,
