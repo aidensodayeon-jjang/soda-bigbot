@@ -328,6 +328,8 @@ class SodabotFace:
         self._mouth_sad()
 
     def _draw_idle_image(self):
+        # 캐릭터 그림 자체가 흰 배경이라, 화면 전체를 흰색으로 채워 이음새 없이 보이게 한다.
+        self.canvas.create_rectangle(0, 0, W, H, fill="#FFFFFF", outline="")
         key = "idle_blink" if self.blink else "idle_open"
         self.canvas.create_image(W / 2, H / 2, image=self.character_images[key])
 
@@ -365,10 +367,11 @@ class SodabotFace:
         if not self.caption:
             return
 
+        on_white_bg = self.state == "idle" and "idle_open" in self.character_images
         self.canvas.create_text(
             W / 2, H - 35,
             text=self.caption,
-            fill=WHITE,
+            fill="#000000" if on_white_bg else WHITE,
             font=("Noto Sans CJK KR", 26, "bold"),
             width=W - 60,
         )
