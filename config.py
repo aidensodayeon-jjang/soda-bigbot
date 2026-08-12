@@ -16,6 +16,7 @@ if os.path.exists(_env_path):
 
 FACES_DIR = os.path.join(BASE_DIR, "faces")
 MODELS_DIR = os.path.join(BASE_DIR, "models")
+CHARACTER_DIR = os.path.join(BASE_DIR, "character")  # 상태별 캐릭터 그림(있으면 도형 대신 사용)
 
 # 얼굴 검출 (OpenCV DNN, Res10 SSD)
 DETECTOR_PROTOTXT = os.path.join(MODELS_DIR, "deploy.prototxt")

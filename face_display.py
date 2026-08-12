@@ -60,6 +60,13 @@ class SodabotFace:
         self.events = queue.Queue()
         self.on_trigger = lambda: None  # main.py가 채워 넣는 대화 시작 콜백
 
+        # 상태별 캐릭터 그림이 있으면 도형 대신 그걸 쓴다 (지금은 idle만 준비됨).
+        self.character_images = {}
+        for key in ("idle_open", "idle_blink"):
+            path = os.path.join(config.CHARACTER_DIR, key + ".png")
+            if os.path.exists(path):
+                self.character_images[key] = tk.PhotoImage(file=path)
+
         self.root.bind("<Escape>", lambda e: self.root.destroy())
         self.root.bind("<space>", lambda e: self.on_trigger())
         for i, name in enumerate(KEY_STATES, start=1):
@@ -320,8 +327,17 @@ class SodabotFace:
         self._worried_eye(RIGHT_X, EYE_Y, False)
         self._mouth_sad()
 
+    def _draw_idle_image(self):
+        key = "idle_blink" if self.blink else "idle_open"
+        self.canvas.create_image(W / 2, H / 2, image=self.character_images[key])
+
     def _draw(self):
         self._clear()
+
+        if self.state == "idle" and "idle_open" in self.character_images:
+            self._draw_idle_image()
+            self._draw_caption()
+            return
 
         if self.blink and self.state not in NO_BLINK_STATES:
             self._closed_eye(LEFT_X, EYE_Y)
