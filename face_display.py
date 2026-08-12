@@ -1,6 +1,8 @@
+import math
 import os
 import queue
 import random
+import time
 import tkinter as tk
 
 if not os.environ.get("DISPLAY"):
@@ -79,6 +81,7 @@ class SodabotFace:
         self._schedule_blink()
         self._move_eyes()
         self._animate_speaking()
+        self._animate_sleepy()
         self._poll_events()
 
     # -----------------------------------------------------
@@ -356,7 +359,13 @@ class SodabotFace:
     def _draw_character_image(self, key):
         # 캐릭터 그림 자체가 흰 배경이라, 화면 전체를 흰색으로 채워 이음새 없이 보이게 한다.
         self.canvas.create_rectangle(0, 0, W, H, fill="#FFFFFF", outline="")
-        self.canvas.create_image(W / 2, H / 2, image=self.character_images[key])
+
+        y = H / 2
+        if key == "sleepy":
+            # 숨 쉬듯 천천히 위아래로 흔들리는 효과
+            y += math.sin(time.time() * 1.5) * 6
+
+        self.canvas.create_image(W / 2, y, image=self.character_images[key])
 
     def _draw(self):
         self._clear()
@@ -436,6 +445,12 @@ class SodabotFace:
             self._draw()
 
         self.root.after(220, self._animate_speaking)
+
+    def _animate_sleepy(self):
+        if self.state == "sleepy":
+            self._draw()
+
+        self.root.after(80, self._animate_sleepy)
 
 
 if __name__ == "__main__":
