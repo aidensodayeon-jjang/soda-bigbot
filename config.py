@@ -64,3 +64,7 @@ MIC_DEVICE = "plughw:CARD=StreamCam,DEV=0"  # 카드 번호는 재부팅마다 �
 # 웨이크워드 (PocketSphinx 키워드 스팟팅)
 WAKE_KEYPHRASE = "hi soda"
 WAKE_KWS_THRESHOLD = "1e-10"  # 오탐지(배경 소음/대화) 방지 우선으로 엄격하게. 대신 가끔 실제 호출도 놓칠 수 있음
+
+# 원생 사진 구글 드라이브 백업 (서비스 계정)
+GDRIVE_KEY_PATH = os.path.join(BASE_DIR, ".gdrive-key.json")
+GDRIVE_FOLDER_ID = "1eErV7aI746ljvSbQJZlsDsVF9_cAi8kH"  # 소다봇원생사진

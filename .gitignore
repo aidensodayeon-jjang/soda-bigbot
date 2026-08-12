@@ -4,3 +4,4 @@ __pycache__/
 models/
 faces/
 .env
+.gdrive-key.json

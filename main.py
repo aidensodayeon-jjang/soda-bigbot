@@ -1,7 +1,9 @@
+import datetime
 import glob
 import os
 import queue
 import sys
+import tempfile
 import threading
 import time
 
@@ -14,6 +16,7 @@ import cv2
 import numpy as np
 
 import config
+import drive_upload
 import face_db
 import proclock
 import voice_chat
@@ -73,6 +76,7 @@ def _capture_registration(cap, detector, embedder, name, app):
     # 3) 버스트 촬영 (고개를 살짝씩 움직이며 여러 각도 확보)
     samples = []
     last_capture = 0
+    last_frame = None
 
     while len(samples) < config.REGISTER_SAMPLES:
         frame, fail_count = _read_frame_or_raise(cap, fail_count)
@@ -95,6 +99,7 @@ def _capture_registration(cap, detector, embedder, name, app):
         if now - last_capture >= config.REGISTER_CAPTURE_INTERVAL:
             samples.append(embedder.embed(face))
             last_capture = now
+            last_frame = frame
             app.push_event((
                 "caption",
                 "촬영 중 {} / {} — 고개를 살짝씩 움직여주세요".format(
@@ -105,11 +110,33 @@ def _capture_registration(cap, detector, embedder, name, app):
     final_embedding = np.mean(np.stack(samples), axis=0)
     path = face_db.save_person(name, final_embedding)
 
+    _backup_photo(last_frame, name)
+
     app.push_event(("caption", "등록 완료: {}!".format(name)))
     time.sleep(2)
     app.push_event(("caption", ""))
 
     return path
+
+
+def _backup_photo(frame, name):
+    """등록 사진 한 장을 구글 드라이브(원생 사진 폴더)에 백업. 실패해도 등록 자체는 이미 끝난 뒤라 무시."""
+    if frame is None or not os.path.exists(config.GDRIVE_KEY_PATH):
+        return
+
+    def _upload():
+        jpg_path = tempfile.mktemp(suffix=".jpg")
+        try:
+            cv2.imwrite(jpg_path, frame)
+            stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            drive_upload.upload_photo(jpg_path, "{}_{}.jpg".format(name, stamp))
+        except Exception as e:
+            print("드라이브 업로드 실패:", e)
+        finally:
+            if os.path.exists(jpg_path):
+                os.remove(jpg_path)
+
+    threading.Thread(target=_upload, daemon=True).start()
 
 
 def vision_loop(app, stop_event, conversation_active, register_queue):
