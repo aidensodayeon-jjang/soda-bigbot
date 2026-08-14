@@ -59,7 +59,7 @@ WEB_PORT = 8080
 # GPT 음성 대화: "hi soda" 또는 스페이스바로 한 번 녹음 → Whisper 전사 → GPT 응답 → TTS 재생
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 CHAT_MODEL = "gpt-4o-mini"
-TTS_VOICE = "alloy"
+TTS_VOICE = "nova"
 MIC_DEVICE = "plughw:CARD=StreamCam,DEV=0"  # 카드 번호는 재부팅마다 바뀔 수 있어서 이름으로 고정
 
 # 웨이크워드 (PocketSphinx 키워드 스팟팅)
