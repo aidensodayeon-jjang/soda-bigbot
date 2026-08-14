@@ -64,7 +64,7 @@ MIC_DEVICE = "plughw:CARD=StreamCam,DEV=0"  # 카드 번호는 재부팅마다 �
 
 # 웨이크워드 (PocketSphinx 키워드 스팟팅)
 WAKE_KEYPHRASE = "hi soda"
-WAKE_KWS_THRESHOLD = "1e-24"  # 작을수록(지수가 더 음수일수록) 더 잘 반응하지만 오탐도 늘어남
+WAKE_KWS_THRESHOLD = "1e-16"  # 작을수록(지수가 더 음수일수록) 더 잘 반응하지만 오탐도 늘어남
 
 # 원생 사진 구글 드라이브 백업 (OAuth. 서비스 계정은 개인 드라이브에 저장 용량이 없어서 못 씀)
 GDRIVE_CLIENT_SECRET_PATH = os.path.join(BASE_DIR, ".gdrive-client-secret.json")
