@@ -105,7 +105,9 @@ def _chat_reply(user_text):
     return resp.json()["choices"][0]["message"]["content"].strip()
 
 
-def speak(text):
+def speak(text, on_start=lambda: None):
+    """on_start는 TTS 요청 시점이 아니라 실제 오디오가 스피커로 나가기 시작할 때 불린다
+    (입 모양 애니메이션이 네트워크 지연 동안 미리 시작되는 걸 방지)."""
     resp = requests.post(
         "https://api.openai.com/v1/audio/speech",
         headers={"Authorization": "Bearer " + config.OPENAI_API_KEY},
@@ -124,8 +126,12 @@ def speak(text):
     player = subprocess.Popen(
         ["aplay", "-q", "-D", config.SPEAKER_DEVICE, "-"], stdin=subprocess.PIPE,
     )
+    started = False
     for chunk in resp.iter_content(chunk_size=4096):
         if chunk:
+            if not started:
+                on_start()
+                started = True
             player.stdin.write(chunk)
     player.stdin.close()
     player.wait()
@@ -153,8 +159,7 @@ def start_conversation(on_state=lambda state: None):
         reply = _chat_reply(user_text)
         print("소다봇:", reply)
 
-        on_state("speaking")
-        speak(reply)
+        speak(reply, on_start=lambda: on_state("speaking"))
     finally:
         os.remove(wav_path)
         on_state("idle")
